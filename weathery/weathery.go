@@ -3,10 +3,20 @@ package weathery
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
+	"regexp"
+	"strconv"
 
-	"golang.org/x/net/html"
+	"github.com/PuerkitoBio/goquery"
 )
+
+type AccuWeatherData struct {
+	temperature               int
+	temperatureUnit           string
+	airQualityMeasurement     int
+	airQualityMeasurementUnit string
+}
 
 func makeAccuWeatherRequest() (*http.Response, error) {
 	url := "https://www.accuweather.com/en/us/denver/80203/weather-forecast/347810"
@@ -44,18 +54,27 @@ func GetAccuWeatherHtml() (string, error) {
 	return string(unencoded[:]), err
 }
 
-func GetAccuWeatherTemperature() (string, error) {
+func GetAccuWeatherData() (AccuWeatherData, error) {
+	data := new(AccuWeatherData)
 	resp, _ := makeAccuWeatherRequest()
 	defer resp.Body.Close()
-	tokenizer := html.NewTokenizer(resp.Body)
-	for {
-		tokenType := tokenizer.Next()
-		if tokenType == html.StartTagToken {
-			if attrName, attrVal, _ := tokenizer.TagAttr(); string(attrName[:]) == "class" && string(attrVal[:]) == "temp" {
-				tokenizer.Next()
-				temp := tokenizer.Text()
-				return string(temp[:]), nil
-			}
-		}
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
+	temp := doc.Find(".cur-con-weather-card .temp").First().Text()
+
+	// find temperature and temperature unit in temp string
+	tempRe := regexp.MustCompile(`\d{1,3}`)
+	unitRe := regexp.MustCompile(`[FC]`)
+	ts := tempRe.FindString(temp)
+	if ts != "" {
+		ti, _ := strconv.Atoi(ts)
+		data.temperature = ti
+	}
+	u := unitRe.FindString(temp)
+	if u != "" {
+		data.temperatureUnit = u
+	}
+	return *data, nil
 }

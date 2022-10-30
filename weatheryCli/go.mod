@@ -6,4 +6,8 @@ replace example.com/weathery => ../weathery
 
 require example.com/weathery v0.0.0-00010101000000-000000000000
 
-require golang.org/x/net v0.1.0 // indirect
+require (
+	github.com/PuerkitoBio/goquery v1.8.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
+	golang.org/x/net v0.1.0 // indirect
+)

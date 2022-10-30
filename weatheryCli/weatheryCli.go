@@ -12,6 +12,6 @@ func main() {
 	log.SetPrefix("weathery: ")
 	log.SetFlags(0)
 
-	temp, _ := weathery.GetAccuWeatherTemperature()
-	fmt.Println(temp)
+	data, _ := weathery.GetAccuWeatherData()
+	fmt.Println(data)
 }
