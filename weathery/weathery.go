@@ -2,16 +2,20 @@ package weathery
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
 type AccuWeatherData struct {
+	city                      string
 	temperature               int
 	temperatureUnit           string
 	airQualityMeasurement     int
@@ -21,9 +25,33 @@ type AccuWeatherData struct {
 	time                      string
 }
 
-func makeAccuWeatherRequest() (*http.Response, error) {
-	url := "https://www.accuweather.com/en/us/denver/80203/weather-forecast/347810"
+func accuWeatherUrl(city string) string {
+	// TODO: create a data file mapping cities to urls instead of hard coding
+	switch strings.ToLower(city) {
+	case "atlanta":
+		return "https://www.accuweather.com/en/us/atlanta/30303/weather-forecast/348181"
+	case "denver":
+		return "https://www.accuweather.com/en/us/denver/80203/weather-forecast/347810"
+	case "fort collins":
+		return "https://www.accuweather.com/en/us/fort-collins/80521/weather-forecast/327348"
+	case "kansas city":
+		return "https://www.accuweather.com/en/us/kansas-city/64106/weather-forecast/329441"
+	case "new york":
+		return "https://www.accuweather.com/en/us/new-york/10021/weather-forecast/349727"
+	case "oklahoma city":
+		return "https://www.accuweather.com/en/us/oklahoma-city/73102/weather-forecast/350143"
+	case "san francisco":
+		return "https://www.accuweather.com/en/us/san-francisco/94103/weather-forecast/347629"
+	default:
+		return ""
+	}
+}
 
+func makeAccuWeatherRequest(city string) (*http.Response, error) {
+	url := accuWeatherUrl(city)
+	if url == "" {
+		return nil, errors.New(fmt.Sprintf("Could not get accuweather url for city: %v", city))
+	}
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("authority", "www.accuweather.com")
@@ -41,8 +69,8 @@ func makeAccuWeatherRequest() (*http.Response, error) {
 	return client.Do(req)
 }
 
-func GetAccuWeatherHtml() (string, error) {
-	resp, err := makeAccuWeatherRequest()
+func GetAccuWeatherHtml(city string) (string, error) {
+	resp, err := makeAccuWeatherRequest(city)
 
 	if err != nil {
 		return "", err
@@ -57,9 +85,10 @@ func GetAccuWeatherHtml() (string, error) {
 	return string(unencoded[:]), err
 }
 
-func GetAccuWeatherData() (AccuWeatherData, error) {
+func GetAccuWeatherData(city string) (AccuWeatherData, error) {
 	data := new(AccuWeatherData)
-	resp, _ := makeAccuWeatherRequest()
+	data.city = city
+	resp, _ := makeAccuWeatherRequest(city)
 	defer resp.Body.Close()
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
