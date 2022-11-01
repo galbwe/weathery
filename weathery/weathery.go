@@ -16,6 +16,9 @@ type AccuWeatherData struct {
 	temperatureUnit           string
 	airQualityMeasurement     int
 	airQualityMeasurementUnit string
+	airQualityDescription     string
+	date                      string
+	time                      string
 }
 
 func makeAccuWeatherRequest() (*http.Response, error) {
@@ -75,6 +78,46 @@ func GetAccuWeatherData() (AccuWeatherData, error) {
 	u := unitRe.FindString(temp)
 	if u != "" {
 		data.temperatureUnit = u
+	}
+
+	// find time of weather measurement
+	timeRaw := doc.Find(".cur-con-weather-card .cur-con-weather-card__subtitle").Text()
+	timeRe := regexp.MustCompile(`\d{1,2}:\d{1,2}\s(A|P)M`)
+	timeParsed := timeRe.FindString(timeRaw)
+	if timeParsed != "" {
+		data.time = timeParsed
+	}
+
+	// find air-quality number and unit
+	airQualityContent := doc.Find(".air-quality-content")
+
+	// parse aq-number
+	airQualityNumber := airQualityContent.Find(".aq-number").Text()
+	aqnRe := regexp.MustCompile(`\d{1,3}`)
+	aqn := aqnRe.FindString(airQualityNumber)
+	if aqn != "" {
+		data.airQualityMeasurement, _ = strconv.Atoi(aqn)
+	}
+	// parse aq-unit
+	airQualityUnit := airQualityContent.Find(".aq-unit").Text()
+	aquRe := regexp.MustCompile(`\w{1,4}`)
+	aqu := aquRe.FindString(airQualityUnit)
+	if aqu != "" {
+		data.airQualityMeasurementUnit = aqu
+	}
+	// parse aq-description
+	aqDescRaw := airQualityContent.Find(".category-text").Text()
+	aqDescRe := regexp.MustCompile(`[a-zA-Z]+`)
+	aqDescParsed := aqDescRe.FindString(aqDescRaw)
+	if aqDescParsed != "" {
+		data.airQualityDescription = aqDescParsed
+	}
+	// parse date
+	dateRaw := airQualityContent.Find(".date").Text()
+	dateRe := regexp.MustCompile(`\d{1,2}/\d{1,2}`)
+	dateParsed := dateRe.FindString(dateRaw)
+	if dateParsed != "" {
+		data.date = dateParsed
 	}
 	return *data, nil
 }
