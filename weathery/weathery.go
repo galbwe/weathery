@@ -1,4 +1,4 @@
-package weathery
+package main
 
 import (
 	"bytes"
@@ -149,4 +149,27 @@ func GetAccuWeatherData(city string) (AccuWeatherData, error) {
 		data.date = dateParsed
 	}
 	return *data, nil
+}
+
+func printWeatherData(d AccuWeatherData) {
+	fmt.Printf(
+		"%v Weather\n%-15v%v\n%-15v%v %v\n%-15v%v %v (%v)\n",
+		strings.Title(d.city),
+		"Time",
+		d.time,
+		"Temperature",
+		d.temperature,
+		d.temperatureUnit,
+		"Air Quality",
+		d.airQualityMeasurement,
+		d.airQualityMeasurementUnit,
+		d.airQualityDescription,
+	)
+}
+
+func main() {
+
+	denver, _ := GetAccuWeatherData("denver")
+	printWeatherData(denver)
+
 }
